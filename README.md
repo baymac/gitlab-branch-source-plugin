@@ -238,7 +238,7 @@ Assuming plugin installation has been done already.
      
 6. Adding a Personal Access Token Credentials:
 
-   This is a manual setup. To automatically generate Personal Accees Token see next section
+   This is a manual setup. To automatically generate Personal Accees Token see next [section](https://github.com/baymac/gitlab-branch-source-plugin#creating-personal-access-token-within-jenkins).
 
     i. User is required to add a `GitLab Personal Access Token` type credentials entry to securely persist the token inside Jenkins
 
