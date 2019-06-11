@@ -8,8 +8,11 @@ import hudson.util.ListBoxModel;
 import io.jenkins.plugins.gitlabserverconfig.servers.helpers.GitLabPersonalAccessTokenCreator;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import jenkins.model.GlobalConfiguration;
@@ -35,10 +38,17 @@ public class GitLabServers extends GlobalConfiguration {
     private List<GitLabServer> servers;
 
     /**
+     * A non serializable Map to store a key value pair of server name and its corresponding
+     * GitLab Server Configuration for faster filtering
+     */
+    private transient Map<String, GitLabServer> serverMap = new HashMap<>();
+
+    /**
      * Constructor.
      */
     public GitLabServers() {
         load();
+        refreshConnectionMap();
     }
 
     /**
@@ -47,8 +57,16 @@ public class GitLabServers extends GlobalConfiguration {
     @Override
     public boolean configure(StaplerRequest req, JSONObject json) throws FormException {
         servers = req.bindJSONToList(GitLabServer.class, json.get("servers"));
+        refreshConnectionMap();
         save();
         return super.configure(req, json);
+    }
+
+    private void refreshConnectionMap() {
+        serverMap.clear();
+        for (GitLabServer server : servers) {
+            serverMap.put(server.getName(), server);
+        }
     }
 
     /**
@@ -103,13 +121,17 @@ public class GitLabServers extends GlobalConfiguration {
     }
 
     /**
-     * Sets the list of endpoints.
+     * Sets the list of GitLab Servers
      *
      * @param endpoints the list of endpoints.
      */
     public void setServers(@CheckForNull List<? extends GitLabServer> endpoints) {
         Jenkins.get().checkPermission(Jenkins.ADMINISTER);
         servers = new ArrayList<>(Util.fixNull(endpoints));
+        serverMap = new HashMap<>();
+        for(GitLabServer server: servers) {
+            serverMap.put(server.getName(), server);
+        }
     }
 
     /**
@@ -135,23 +157,18 @@ public class GitLabServers extends GlobalConfiguration {
      * Updates an existing endpoint (or adds if missing)
      * Checks if the GitLab Server name is matched
      *
-     * @param endpoint the endpoint to update.
+     * @param server the endpoint to update.
+     * @return {@code true} if the list of endpoints was modified
      */
-    public void updateServer(@Nonnull GitLabServer endpoint) {
-        List<GitLabServer> endpoints = new ArrayList<>(getServers());
-        boolean found = false;
-        for (int i = 0; i < endpoints.size(); i++) {
-            GitLabServer ep = endpoints.get(i);
-            if (Util.fixNull(ep.getName()).equals(Util.fixNull(endpoint.getName()))) {
-                endpoints.set(i, endpoint);
-                found = true;
-                break;
-            }
+    public boolean updateServer(@Nonnull GitLabServer server) {
+        if (!serverMap.containsKey(server.getName())) {
+            return false;
         }
-        if (!found) {
-            endpoints.add(endpoint);
-        }
+        List<GitLabServer> endpoints =  getServers().stream()
+                .map(oldServer -> oldServer.getName().equals(server.getName()) ? server : oldServer)
+                .collect(Collectors.toList());
         setServers(endpoints);
+        return true;
     }
 
     /**
