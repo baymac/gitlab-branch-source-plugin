@@ -40,13 +40,14 @@ public class GitLabServers extends GlobalConfiguration {
      * A non serializable Map to store a key value pair of server name and its corresponding
      * GitLab Server Configuration for faster filtering
      */
-    private transient Map<String, GitLabServer> serverMap = new HashMap<>();
+    private Map<String, GitLabServer> serverMap = new HashMap<>();
 
     /**
      * Constructor.
      */
     public GitLabServers() {
         load();
+//        refreshServerMap();
     }
 
     /**
