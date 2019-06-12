@@ -8,7 +8,6 @@ import hudson.util.ListBoxModel;
 import io.jenkins.plugins.gitlabserverconfig.servers.helpers.GitLabPersonalAccessTokenCreator;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -40,12 +39,6 @@ public class GitLabServers extends GlobalConfiguration {
     private List<GitLabServer> servers;
 
     /**
-     * A non serializable Map to store a key value pair of server name and its corresponding
-     * GitLab Server Configuration for faster filtering
-     */
-    private Map<String, GitLabServer> serverMap = new HashMap<>();
-
-    /**
      * Constructor.
      */
     public GitLabServers() {
@@ -60,8 +53,6 @@ public class GitLabServers extends GlobalConfiguration {
         servers = req.bindJSONToList(GitLabServer.class, json.get("servers"));
         removeDuplicateServers();
         servers.forEach(server -> LOGGER.info(String.format("Servers: %s", server.getName())));
-        refreshServerMap();
-        serverMap.keySet().forEach(name -> LOGGER.info(String.format("Server Names: %s", name)));
         save();
         return super.configure(req, json);
     }
@@ -87,30 +78,6 @@ public class GitLabServers extends GlobalConfiguration {
         servers = servers.stream()
                 .filter(distinctByKey(GitLabServer::getName))
                 .collect(Collectors.toList());
-    }
-
-    /**
-     * Helper function to pass a method reference to get the GitLab Server using streams to
-     * convert a list to map.
-     *
-     * @param server the server to return
-     * @return server
-     */
-    private static GitLabServer apply(GitLabServer server) {
-        return server;
-    }
-
-    /**
-     * Refreshes serverMap before serialising the object
-     */
-    private void refreshServerMap() {
-        serverMap.clear();
-        serverMap = servers.stream()
-                .collect(
-                        Collectors.toMap(
-                                GitLabServer::getName, GitLabServers::apply
-                        )
-                );
     }
 
     /**
@@ -172,26 +139,29 @@ public class GitLabServers extends GlobalConfiguration {
     public void setServers(@CheckForNull List<? extends GitLabServer> servers) {
         Jenkins.get().checkPermission(Jenkins.ADMINISTER);
         this.servers = new ArrayList<>(Util.fixNull(servers));
-        serverMap = new HashMap<>();
-        for(GitLabServer server: this.servers) {
-            serverMap.put(server.getName(), server);
-        }
     }
 
     /**
-     * Adds an endpoint
+     * Adds an server
      * Checks if the GitLab Server name is unique
      *
      * @param server the server to add.
      * @return {@code true} if the list of endpoints was modified
      */
     public boolean addServer(@Nonnull GitLabServer server) {
-        List<GitLabServer> endpoints = new ArrayList<>(getServers());
-        if(!serverMap.containsKey(server.getName())) {
+        List<GitLabServer> servers = new ArrayList<>(getServers());
+        GitLabServer s = servers.stream()
+                .filter(server1 -> server1.getName().equals(server.getName()))
+                .findAny()
+                .orElse(null);
+//        if(serverMap.containsKey(server.getName())) {
+//            return false;
+//        }
+        if(s != null) {
             return false;
         }
-        endpoints.add(server);
-        setServers(endpoints);
+        servers.add(server);
+        setServers(servers);
         return true;
     }
 
@@ -203,10 +173,12 @@ public class GitLabServers extends GlobalConfiguration {
      * @return {@code true} if the list of endpoints was modified
      */
     public boolean updateServer(@Nonnull GitLabServer server) {
-        if (!serverMap.containsKey(server.getName())) {
+
+        List<GitLabServer> servers = new ArrayList<>(getServers());
+        if(!servers.contains(server)) {
             return false;
         }
-        List<GitLabServer> servers =  getServers().stream()
+        servers = servers.stream()
                 .map(oldServer -> oldServer.getName().equals(server.getName()) ? server : oldServer)
                 .collect(Collectors.toList());
         setServers(servers);
@@ -221,12 +193,11 @@ public class GitLabServers extends GlobalConfiguration {
      * @return {@code true} if the list of endpoints was modified
      */
     public boolean removeServer(@CheckForNull String name) {
-        if(!serverMap.containsKey(name)) {
-            return false;
-        }
         List<GitLabServer> servers = new ArrayList<>(getServers());
-        servers.removeIf(server -> server.getName().equals(name));
-        setServers(servers);
-        return true;
+        boolean removed = servers.removeIf(s -> s.getName().equals(name));
+        if(removed) {
+            setServers(servers);
+        }
+        return removed;
     }
 }
