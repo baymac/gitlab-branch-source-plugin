@@ -49,6 +49,7 @@ public class GitLabServer extends AbstractDescribableImpl<GitLabServer> {
      * Used as default server URL for the serverUrl field
      */
     public static final String GITLAB_SERVER_URL = "https://gitlab.com";
+
     /**
      * Used as default token value if no any credentials found by given credentialsId.
      */
