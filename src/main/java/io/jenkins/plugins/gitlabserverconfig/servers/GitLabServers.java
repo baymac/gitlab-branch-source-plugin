@@ -170,7 +170,6 @@ public class GitLabServers extends GlobalConfiguration {
      * @return {@code true} if the list of endpoints was modified
      */
     public boolean updateServer(@Nonnull GitLabServer server) {
-
         List<GitLabServer> servers = new ArrayList<>(getServers());
         if(!servers.contains(server)) {
             return false;
