@@ -154,9 +154,6 @@ public class GitLabServers extends GlobalConfiguration {
                 .filter(server1 -> server1.getName().equals(server.getName()))
                 .findAny()
                 .orElse(null);
-//        if(serverMap.containsKey(server.getName())) {
-//            return false;
-//        }
         if(s != null) {
             return false;
         }
