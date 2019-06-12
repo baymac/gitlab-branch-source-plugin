@@ -17,7 +17,6 @@ import hudson.util.ListBoxModel;
 import io.jenkins.plugins.gitlabserverconfig.credentials.PersonalAccessToken;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.List;
 
 import jenkins.model.Jenkins;
 import jenkins.scm.api.SCMName;
@@ -25,7 +24,6 @@ import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.StringUtils;
 import org.gitlab4j.api.GitLabApi;
 import org.gitlab4j.api.GitLabApiException;
-import org.gitlab4j.api.models.Project;
 import org.gitlab4j.api.models.User;
 import org.kohsuke.accmod.Restricted;
 import org.kohsuke.accmod.restrictions.DoNotUse;
