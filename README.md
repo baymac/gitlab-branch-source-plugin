@@ -310,6 +310,11 @@ required scope. You can go back to the GitLab Server Configuration to select the
 credentials with the `id` returned by token creator. It should be a a 128-bit long UUID-4 string (36 characters).
 
    ![gitlab-token-creator](docs/img/gitlab-token-creator.png)
+   
+### Configuration as Code
+
+There is an easier way to setup GitLab Server configuration on your Jenkins server. Jenkins
+Configuration as Code (JCasC) allows you to configure your Jenkins Global Configuration by a simple `yaml` file. 
 
 ### Setting up GitLab for jobs
 

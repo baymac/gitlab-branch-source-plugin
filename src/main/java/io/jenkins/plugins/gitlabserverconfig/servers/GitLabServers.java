@@ -11,6 +11,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
@@ -47,7 +50,6 @@ public class GitLabServers extends GlobalConfiguration {
      */
     public GitLabServers() {
         load();
-//        refreshServerMap();
     }
 
     /**
@@ -56,16 +58,59 @@ public class GitLabServers extends GlobalConfiguration {
     @Override
     public boolean configure(StaplerRequest req, JSONObject json) throws FormException {
         servers = req.bindJSONToList(GitLabServer.class, json.get("servers"));
+        removeDuplicateServers();
+        servers.forEach(server -> LOGGER.info(String.format("Servers: %s", server.getName())));
         refreshServerMap();
+        serverMap.keySet().forEach(name -> LOGGER.info(String.format("Server Names: %s", name)));
         save();
         return super.configure(req, json);
     }
 
+    /**
+     * Helper function to get predicate to filter servers
+     * based on their names
+     *
+     * @param keyExtractor the Function to filter
+     * @param <T> In this case it is server
+     * @return a predicate to filter servers list
+     */
+    private static <T> Predicate<T> distinctByKey(
+            Function<? super T, ?> keyExtractor) {
+        Map<Object, Boolean> seen = new ConcurrentHashMap<>();
+        return t -> seen.putIfAbsent(keyExtractor.apply(t), Boolean.TRUE) == null;
+    }
+
+    /**
+     * Remove duplicate server entries
+     */
+    private void removeDuplicateServers() {
+        servers = servers.stream()
+                .filter(distinctByKey(GitLabServer::getName))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Helper function to pass a method reference to get the GitLab Server using streams to
+     * convert a list to map.
+     *
+     * @param server the server to return
+     * @return server
+     */
+    private static GitLabServer apply(GitLabServer server) {
+        return server;
+    }
+
+    /**
+     * Refreshes serverMap before serialising the object
+     */
     private void refreshServerMap() {
         serverMap.clear();
-        for (GitLabServer server : servers) {
-            serverMap.put(server.getName(), server);
-        }
+        serverMap = servers.stream()
+                .collect(
+                        Collectors.toMap(
+                                GitLabServer::getName, GitLabServers::apply
+                        )
+                );
     }
 
     /**
