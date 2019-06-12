@@ -17,12 +17,15 @@ import hudson.util.ListBoxModel;
 import io.jenkins.plugins.gitlabserverconfig.credentials.PersonalAccessToken;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.List;
+
 import jenkins.model.Jenkins;
 import jenkins.scm.api.SCMName;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.StringUtils;
 import org.gitlab4j.api.GitLabApi;
 import org.gitlab4j.api.GitLabApiException;
+import org.gitlab4j.api.models.Project;
 import org.gitlab4j.api.models.User;
 import org.kohsuke.accmod.Restricted;
 import org.kohsuke.accmod.restrictions.DoNotUse;
@@ -220,15 +223,20 @@ public class GitLabServer extends AbstractDescribableImpl<GitLabServer> {
             try {
                 new URL(value);
             } catch (MalformedURLException e) {
-                LOGGER.error("Incorrect server url - %s", value);
-                return FormValidation.error("Malformed GitLab url (%s)", e.getMessage());
+                LOGGER.error("Incorrect url - %s", value);
+                return FormValidation.error("Malformed url (%s)", e.getMessage());
             }
-            // TODO:[JENKINS-57747] Add support for GitLab Ultimate (self hosted) and Gold (saas)
             if (GITLAB_SERVER_URL.equals(value)) {
-                LOGGER.info("Server URL is fine - %s", value);
+                LOGGER.info("Community version of GitLab - %s", value);
             }
-            LOGGER.info("Unable to validate serverUrl - %s", value);
-            return FormValidation.ok();
+            GitLabApi gitLabApi = new GitLabApi(value, "");
+            try {
+                gitLabApi.getProjectApi().getProjects(1, 1);
+                return FormValidation.ok();
+            } catch (GitLabApiException e) {
+                LOGGER.info("Unable to validate serverUrl - %s", value);
+                return FormValidation.error(Messages.GitLabServer_invalidUrl(value));
+            }
         }
 
         @NonNull
