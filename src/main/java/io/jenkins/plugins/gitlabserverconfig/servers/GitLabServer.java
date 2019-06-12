@@ -41,7 +41,6 @@ import static org.apache.commons.lang.StringUtils.defaultIfBlank;
 /**
  * Represents a GitLab Server instance.
  */
-
 public class GitLabServer extends AbstractDescribableImpl<GitLabServer> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GitLabServer.class);
