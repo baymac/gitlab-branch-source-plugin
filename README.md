@@ -314,7 +314,30 @@ credentials with the `id` returned by token creator. It should be a a 128-bit lo
 ### Configuration as Code
 
 There is an easier way to setup GitLab Server configuration on your Jenkins server. Jenkins
-Configuration as Code (JCasC) allows you to configure your Jenkins Global Configuration by a simple `yaml` file. 
+Configuration as Code (JCasC) allows you to configure your Jenkins Global Configuration by a simple `yaml` file. If you
+use Jenkins Code as Configuration on your Jenkins Instance, you can add the following to your `jenkins.yaml`. 
+
+```yaml
+credentials:
+  system:
+    domainCredentials:
+      - credentials:
+          - gitlabPersonalAccessToken:
+              scope: SYSTEM
+              id: "i<3GitLab"
+              token: "XfsqZvVtAx5YCph5bq3r" # gitlab personal access token
+
+unclassified:
+  gitLabServers:
+    servers:
+      - credentialsId: "i<3GitLab"
+        manageHooks: true
+        name: "gitlab.com"
+        serverUrl: "https://gitlab.com"
+```
+
+See handling secrets [section](https://github.com/jenkinsci/configuration-as-code-plugin#handling-secrets) for better
+security.
 
 ### Setting up GitLab for jobs
 
