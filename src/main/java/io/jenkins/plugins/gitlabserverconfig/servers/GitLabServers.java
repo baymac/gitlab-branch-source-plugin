@@ -2,8 +2,8 @@ package io.jenkins.plugins.gitlabserverconfig.servers;
 
 import hudson.Extension;
 import hudson.ExtensionList;
-import hudson.Util;
 import hudson.model.Descriptor;
+import hudson.model.PersistentDescriptor;
 import hudson.util.ListBoxModel;
 import io.jenkins.plugins.gitlabserverconfig.servers.helpers.GitLabPersonalAccessTokenCreator;
 import java.util.ArrayList;
@@ -18,17 +18,17 @@ import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import jenkins.model.GlobalConfiguration;
 import jenkins.model.Jenkins;
-import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
-import org.kohsuke.stapler.StaplerRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static hudson.Util.fixNull;
 
 /**
  * Represents the global configuration of GitLab servers.
  */
 @Extension
-public class GitLabServers extends GlobalConfiguration {
+public class GitLabServers extends GlobalConfiguration implements PersistentDescriptor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GitLabServers.class);
 
@@ -37,25 +37,6 @@ public class GitLabServers extends GlobalConfiguration {
      * one entry for each {@link GitLabServer#getServerUrl()}.
      */
     private List<GitLabServer> servers;
-
-    /**
-     * Constructor.
-     */
-    public GitLabServers() {
-        load();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean configure(StaplerRequest req, JSONObject json) throws FormException {
-        servers = req.bindJSONToList(GitLabServer.class, json.get("servers"));
-        removeDuplicateServers();
-        servers.forEach(server -> LOGGER.info(String.format("Servers: %s", server.getName())));
-        save();
-        return super.configure(req, json);
-    }
 
     /**
      * Helper function to get predicate to filter servers
@@ -69,15 +50,6 @@ public class GitLabServers extends GlobalConfiguration {
             Function<? super T, ?> keyExtractor) {
         Map<Object, Boolean> seen = new ConcurrentHashMap<>();
         return t -> seen.putIfAbsent(keyExtractor.apply(t), Boolean.TRUE) == null;
-    }
-
-    /**
-     * Remove duplicate server entries
-     */
-    private void removeDuplicateServers() {
-        servers = servers.stream()
-                .filter(distinctByKey(GitLabServer::getName))
-                .collect(Collectors.toList());
     }
 
     /**
@@ -138,7 +110,9 @@ public class GitLabServers extends GlobalConfiguration {
      */
     public void setServers(@CheckForNull List<? extends GitLabServer> servers) {
         Jenkins.get().checkPermission(Jenkins.ADMINISTER);
-        this.servers = new ArrayList<>(Util.fixNull(servers));
+        this.servers = fixNull(servers).stream()
+            .filter(distinctByKey(GitLabServer::getName)).collect(Collectors.toList());
+        save();
     }
 
     /**
